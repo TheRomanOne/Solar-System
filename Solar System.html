@@ -1,0 +1,309 @@
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>Second try - solar system</title>
+		<style>
+			body { margin: 0; }
+			
+		</style>
+	</head>
+	<body>
+		<script src="js/three.js"></script>
+		<script id="vertexShader">
+
+		</script>
+
+		<script id="fragmentShader">
+
+		</script>
+
+
+		<script>
+
+		var sortingHat, alertTheOthers, fastNRound;
+		var scene, camera, renderer, drawPattern;
+		var sun, earth, moon, mars, venus, mercury, jupiter, saturn, uranus, neptune, p;
+		var planets = [];
+		var time = 0.0;
+
+		init();
+		update();
+
+		function init()
+		{
+			//---CONTROL PANEL---//
+			//
+			//Planets are up to scale (except for the
+			//sun), but so is the distance from the sun.
+			//Therefore, choose 'distant' camera to view
+			//up to scale.
+			//
+
+			setCamera(2); //---  1: above  |  2: distant  ---//
+			dt = 1000; // delta Time, default: 1000
+			sizeConstant = 3000; //default: 3000
+			distanceConstant = 2.5; //default: 2.5
+			fastNRound = false //default: false
+			drawPattern = true;
+
+			//---!!!CONTROL PANEL!!!---//
+
+
+			scene = new THREE.Scene();
+			renderer = new THREE.WebGLRenderer({
+				logarithmicDepthBuffer: true,
+				antialias	: fastNRound
+			});
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			sortingHat = 1;
+			document.body.appendChild(renderer.domElement);
+
+
+			mercuryInfo =
+			{
+				name: 'Mercury',
+				self: mercury,
+				map: 'textures/mercury.jpg',
+				size: 2440,
+				distance: 57.91,
+				freq: 88,
+				offset: Math.PI/2,
+				rot: 58 * 24,
+				number: 1
+			}
+			generate(mercuryInfo);
+
+			venusInfo =
+			{
+				name: 'Venus',
+				self: venus,
+				map: 'textures/venus.jpg',
+				size: 6052,
+				distance: 108.2,
+				freq: 225,
+				offset: Math.PI/2,
+				rot: 116 * 24 + 18,
+				number: 2
+			}
+			generate(venusInfo);
+
+			earthInfo =
+			{
+				name: 'Earth',
+				self: earth,
+				map: 'textures/earth.jpg',
+				size: 6371,
+				distance: 147.6,
+				freq: 365,
+				offset: 6 * Math.PI / 7,
+				rot: 24,
+				number: 3
+			}
+			generate(earthInfo);
+
+			moonInfo =
+			{
+				name: 'Moon',
+				self: moon,
+				map: 'textures/blank.jpg',
+				color: 0xeeeeee,
+				size: 1737,
+				distance: 18,
+				freq: 27,
+				offset: 0,
+				rot: 1,
+			}
+			generate(moonInfo);
+
+			marsInfo =
+			{
+				name: 'Mars',
+				self: mars,
+				map: 'textures/mars.jpg',
+				size: 3390,
+				distance: 227.9,
+				freq: 687,
+				offset: 7 * Math.PI / 6,
+				rot: 24.1,
+				number: 4
+			}
+			generate(marsInfo);
+
+			jupiterInfo =
+			{
+				name: 'Jupiter',
+				self: jupiter,
+				map: 'textures/jupiter.jpg',
+				size: 69911,
+				distance: 778.5,
+				freq: 12 * 365,
+				offset: Math.PI - 0.2,
+				rot: 10,
+				number:5
+			}
+			generate(jupiterInfo);
+			
+			saturnInfo =
+			{
+				name: 'Saturn',
+				self: saturn,
+				map: 'textures/saturn.jpg',
+				size: 58232,
+				distance: 1429,
+				freq: 29 * 365,
+				offset: Math.PI + 0.2,
+				rot: 10.75,
+				ring:
+				{
+					min: 7000,
+					max: 80000
+				},
+				number: 6
+			}
+			generate(saturnInfo);
+
+			uranusInfo =
+			{
+				name: 'Uranus',
+				self: uranus,
+				map: 'textures/uranus.jpg',
+				size: 25362,
+				distance: 2877,
+				freq: 84 * 365,
+				offset: Math.PI - 0.3,
+				rot: 17.25,
+				number: 7
+			}
+			generate(uranusInfo);
+
+			neptuneInfo =
+			{
+				name: 'Neptune',
+				self: neptune,
+				map: 'textures/neptune.jpg',
+				size: 24622,
+				distance: 4498,
+				freq: 165 * 365,
+				offset: Math.PI + 0.3,
+				rot: 16,
+				number: 8
+			}
+			generate(neptuneInfo);
+
+
+			var sunGeo = new THREE.SphereGeometry(15, 20, 20);
+			var sunTxtr = new THREE.MeshBasicMaterial( { map: new THREE.TextureLoader().load('textures/sun.jpg') } );
+			sun = new THREE.Mesh( sunGeo, sunTxtr);
+			var pointLight = new THREE.AmbientLight( 0xffffff, 0.05 );
+			scene.add(pointLight);
+			scene.add(new THREE.PointLight( 0xffffff, 1));
+			scene.add(sun);
+		}
+
+		function update()
+		{
+			time += 1/dt;			
+
+			for(var i=0; i<planets.length; i++)
+			{
+				move(planets[i]);
+				if(planets[i].name == 'Moon')
+				{
+					planets[i].self.position.x += earthInfo.self.position.x;
+					planets[i].self.position.z += earthInfo.self.position.z;
+				}
+			}
+
+			sun.rotation.y = time * (365/(24.47 * 24));
+			
+			requestAnimationFrame( update );
+			renderer.render( scene, camera );
+		}
+
+		function generate(planet)
+		{
+			var planetGeo = new THREE.SphereGeometry(planet.size/sizeConstant, 20, 20);
+			var planetTxtr = new THREE.MeshLambertMaterial( 
+				{
+					color: planet.color,
+					map: new THREE.TextureLoader().load(planet.map)
+				});
+			planet.self = new THREE.Mesh(planetGeo, planetTxtr);
+
+			if (alertTheOthers)
+				planet.offset = Math.PI *(1 + Math.pow(-1, sortingHat++)/2);
+
+			if(planet.name == 'Saturn')
+			{
+				var ring = new THREE.Mesh(
+				new THREE.RingGeometry( (planet.size + planet.ring.min)/sizeConstant, (planet.size + planet.ring.max)/sizeConstant, 32 ),
+				new THREE.MeshBasicMaterial(
+				{
+					map: new THREE.TextureLoader().load('textures/ring.png'),
+					color: 0x777777,
+					side: THREE.DoubleSide
+				}
+					));
+
+				ring.rotation.x = Math.PI/2;
+				planet.self.add(ring);
+				planet.self.rotation.x = -0.2;
+			}
+			scene.add(planet.self);
+			if ((planet.name != 'Moon') && drawPattern)
+				pattern(planet);
+			planets.push(planet);
+		}
+
+		function move(planet)
+		{
+			var thePlanet = planet.self;
+			
+			thePlanet.position.x = planet.distance/distanceConstant * Math.sin(planet.offset + time * 365/planet.freq);
+			thePlanet.position.z = planet.distance/distanceConstant * Math.cos(planet.offset + time * 365/planet.freq);
+			thePlanet.rotation.y = (365/planet.rot) * time;
+		}
+
+		function pattern(planet)
+		{
+		    material = new THREE.LineBasicMaterial( { color: 0x333333 } ),
+		    geometry = new THREE.CircleGeometry( planet.distance/distanceConstant, 50 );
+			geometry.vertices.shift();
+			var m = new THREE.Line( geometry, material );
+			m.rotation.x = Math.PI/2;
+			scene.add( m );
+			console.log(planet.name);
+		}
+
+		function setCamera(state)
+		{
+			var h = window.innerHeight;
+			var w = window.innerWidth;
+			var aspect = w/h;
+			if (state == 1)
+			{
+				alertTheOthers = true;
+				camera = new THREE.PerspectiveCamera(50, aspect, 0.0001, 4498);
+				camera.position.z = 0;
+				camera.position.y = 4000;
+				camera.rotation.x = -Math.PI/2;
+			}
+
+			if (state == 2)
+			{
+				camera = new THREE.PerspectiveCamera(25, aspect, 0.0001, 4000);
+				camera.position.z = 250;
+				camera.position.y = 40;
+				camera.rotation.x = -0.15;
+			}
+
+			function makeFog()
+			{
+				scene.fog = new THREE.Fog(0xffffff, 0.015, 100);
+				renderer.setClearColor(new THREE.Color(0xEEEEEE, 1.0));
+				renderer.shadowMapEnabled = true;
+			}
+		}
+		</script>
+	</body>
+</html>
